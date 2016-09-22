@@ -1,12 +1,23 @@
+// *****************************************************************************
+// Dependecies
+// *****************************************************************************
 const Botkit = require('botkit');
-const randomNumber = require('./helpers/random-number.js');
 const request = require('request');
+const caniuse = require('caniuse-api');
 
+// *****************************************************************************
+// Helper methods
+// *****************************************************************************
+const randomNumber = require('./helpers/random-number.js');
+const Caniuse = require('./helpers/caniuse.js');
+
+// *****************************************************************************
+// Slack handshake
+// *****************************************************************************
 const controller = Botkit.slackbot({
   debug: false
 
 });
-
 // connect the bot to a stream of messages
 controller.spawn({
   token: 'xoxb-81725368998-YFmGmso3od5cN1oX7HtTNVo6',
@@ -135,3 +146,44 @@ controller.hears('weather (.*)', 'ambient', ( bot, msg) => {
     bot.reply(msg, messageString);
   });
 });
+
+
+// *****************************************************************************
+// Can I use
+// *****************************************************************************
+
+
+// controller.hears('caniuse (.*)', 'ambient', ( bot, msg) => {
+//   let property = msg.match[1];
+//   console.log(property);
+//
+//   let caniuseResponse  = caniuse.getSupport('border');
+//   console.log('caniuseResponse', caniuseResponse);
+//   // browser = new Caniuse(caniuseResponse);
+//   // browser.supportedBrowsers();
+//   //
+//   // let messageString = `${browser.chrome()} ${browser.ie()} ${browser.edge()} ${browser.firefox()} ${browser.chromeAndroid()} ${browser.safari()} ${browser.opera()} ${browser.safariIos()}\n *More info* :arrow_forward:http://caniuse.com/#search=${property}`;
+//   //
+//   //   bot.reply(msg, messageString);
+//
+// });
+
+
+
+
+
+
+
+
+// module.exports = (robot) => {
+//   return robot.hear(/caniuse (.*)/i, (msg) => {
+//
+//      let arguments = msg.match[1];
+//      let caniuseResponse  = caniuse.getSupport(arguments, true);
+//      browser = new Caniuse(caniuseResponse);
+//      browser.supportedBrowsers();
+//
+//      let message = `${browser.chrome()} ${browser.ie()} ${browser.edge()} ${browser.firefox()} ${browser.chromeAndroid()} ${browser.safari()} ${browser.opera()} ${browser.safariIos()}\n *More info* :arrow_forward:http://caniuse.com/#search=${arguments}`;
+//      return msg.send(message);
+//   });
+// };// end of robot
