@@ -1,11 +1,9 @@
 const Botkit = require('botkit');
 const randomNumber = require('./helpers/random-number.js');
-let controller = Botkit.slackbot({});
 
-controller = Botkit.slackbot({
+const controller = Botkit.slackbot({
   debug: false
-  //include "log: false" to disable logging
-  //or a "logLevel" integer from 0 to 7 to adjust logging verbosity
+
 });
 
 // connect the bot to a stream of messages
@@ -13,14 +11,9 @@ controller.spawn({
   token: 'xoxb-81725368998-YFmGmso3od5cN1oX7HtTNVo6',
 }).startRTM()
 
-// give the bot something to listen for.
-
-
-function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-
+// *****************************************************************************
+// Arnie quotes
+// *****************************************************************************
 const arnieQuotes = [`*To crush your enemies, see them driven before you, and to hear the lamentation of their women!* – _Conan the Barbarian_\n https://www.youtube.com/watch?v=Oo9buo9Mtos`,
                     `*Your clothes, give them to me, now!* – _Terminator_ \n https://www.youtube.com/watch?v=x3pu25Eroi4`,
                     `*If it bleeds, we can kill it* - _Predator_ \n https://www.youtube.com/watch?v=eNr0WXQ3Ho4`,
@@ -41,6 +34,20 @@ controller.hears('arnie quote', 'ambient', (bot, msg)=> {
     let max = arnieQuotes.length;
     randomNumber( 0, max ).then((randomValue) => {
       let messageString = arnieQuotes[randomValue];
+      bot.reply(msg, messageString);
+    })
+});
+
+// *****************************************************************************
+// Tea makers
+// *****************************************************************************
+
+const teaMakers = [`@elliott.evans :coffee:`, `@mike: :beer:`, `@pataruco :coffee:`, `@lewis: :coffee:`, `@ian.shaw: :coffee:`];
+
+controller.hears('tea', 'ambient', (bot, msg)=> {
+    let max = teaMakers.length;
+    randomNumber( 0, max ).then((randomValue) => {
+      let messageString = teaMakers[randomValue];
       bot.reply(msg, messageString);
     })
 });
