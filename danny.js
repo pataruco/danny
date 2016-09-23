@@ -5,6 +5,10 @@ const Botkit = require('botkit');
 const request = require('request');
 const caniuse = require('caniuse-api');
 const cheerio = require('cheerio');
+const Store = require('jfs');
+const moment = require('moment');
+require('moment-precise-range-plugin');
+
 // *****************************************************************************
 // Helper methods
 // *****************************************************************************
@@ -16,13 +20,16 @@ const enviromentalColour = require('./helpers/enviromental-colour.js');
 // Slack handshake
 // *****************************************************************************
 const controller = Botkit.slackbot({
-  debug: false
+  debug: false,
+  json_file_store: './storage',
+  interactive_replies: true
 });
 // connect the bot to a stream of messages
 controller.spawn({
   token: 'xoxb-81725368998-YFmGmso3od5cN1oX7HtTNVo6',
 }).startRTM()
 
+// asapStorage('/');
 // *****************************************************************************
 // Arnie quotes
 // *****************************************************************************
@@ -151,7 +158,7 @@ controller.hears('weather (.*)', 'ambient', ( bot, msg) => {
 // *****************************************************************************
 // Governator
 // *****************************************************************************
-controller.hears('sitecode (.*)', 'ambient', ( bot, msg) => {
+controller.hears('sitecode (.*)', ['ambient', 'direct_message	', 'direct_mention'], ( bot, msg) => {
   let options = { method: 'GET',
     rejectUnauthorized: false,
     url: 'https://governator.thirtythreebuild.co.uk/site.php',
@@ -189,3 +196,165 @@ controller.hears('sitecode (.*)', 'ambient', ( bot, msg) => {
     }
   });
 });
+
+// *****************************************************************************
+// ASAP
+// *****************************************************************************
+
+// const createAsapStorage = function() {
+//   const objectsToList = function(cb) {
+//     return function(err, data) {
+//       if (err) {
+//         cb(err, data);
+//       } else {
+//         cb(err, Object.keys(data).map(function(key) {
+//           return data[key];
+//         }));
+//       }
+//     };
+//   };
+//
+//   let asap_db = new Store('./storage/asap', {saveId: 'id'});
+//
+//   controller.storage.asap = {
+//     get: function(asap_id, cb) {
+//       asap_db.get(asap_id, cb);
+//     },
+//     save: function(asap_data, cb) {
+//       asap_db.save(asap_data.id, asap_data, cb);
+//     },
+//     all: function(cb) {
+//       asap_db.all(objectsToList(cb));
+//     }
+//   }
+// }
+
+
+let asapOnBrain = null;
+
+controller.hears('asap', 'ambient', ( bot, msg ) => {
+  if (!asapOnBrain) {
+    asapOnBrain = moment();
+  }
+
+  let lengthOfTime = moment().preciseDiff(asapOnBrain);
+  let now = moment();
+  let diffDays = now.diff(asapOnBrain, 'days');
+  let diffHours = now.diff(asapOnBrain, 'hours');
+
+  asapOnBrain = asapOnBrain = moment();
+  let messageString =`It’s been ${lengthOfTime} since *ASAP* was last mentioned`;
+  // bot.startPrivateConversation(msg, messageString)
+
+  let messageUserId = msg.user;
+
+  bot.startPrivateConversation({ user:messageUserId }, function(err,convo) {
+    // controller.interactive_replies = true;
+    convo.say(messageString);
+    convo.ask({
+        attachments:[
+            {
+                title: 'Do you want to proceed?',
+                callback_id: '123',
+                attachment_type: 'default',
+                fallback: 'fallback',
+                actions: [
+                    {
+                        "name":"yes",
+                        "text": "yes",
+                        "value": "yes",
+                        "type": "button",
+                    },
+                    {
+                        "name":"no",
+                        "text": "no",
+                        "value": "no",
+                        "type": "button",
+                    }
+                ]
+            }
+        ]
+    },[
+        {
+            pattern: "yes",
+            callback: function(reply, convo) {
+                convo.say('FABULOUS!');
+                convo.next();
+                // do something awesome here.
+            }
+        },
+        {
+            pattern: "no",
+            callback: function(reply, convo) {
+                convo.say('Too bad');
+                convo.next();
+            }
+        },
+        {
+            default: true,
+            callback: function(reply, convo) {
+                // do nothing
+            }
+        }
+    ]
+
+  );
+
+  }) //end of private conversation
+
+  // bot.reply(msg, messageString);
+})
+
+
+
+
+
+
+// bot.startConversation(message, function(err, convo) {
+//
+//     convo.ask({
+//         attachments:[
+//             {
+//                 title: 'Do you want to proceed?',
+//                 callback_id: '123',
+//                 attachment_type: 'default',
+//                 actions: [
+//                     {
+//                         "name":"yes",
+//                         "text": "Yes",
+//                         "value": "yes",
+//                         "type": "button",
+//                     },
+//                     {
+//                         "name":"no",
+//                         "text": "No",
+//                         "value": "no",
+//                         "type": "button",
+//                     }
+//                 ]
+//             }
+//         ]
+//     },[
+//         {
+//             pattern: "yes",
+//             callback: function(reply, convo) {
+//                 convo.say('FABULOUS!');
+//                 convo.next();
+//                 // do something awesome here.
+//             }
+//         },
+//         {
+//             pattern: "no",
+//             callback: function(reply, convo) {
+//                 convo.say('Too bad');
+//                 convo.next();
+//             }
+//         },
+//         {
+//             default: true,
+//             callback: function(reply, convo) {
+//                 // do nothing
+//             }
+//         }
+//     ]);
+// });
