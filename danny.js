@@ -1,22 +1,22 @@
 // *****************************************************************************
-// Dependecies
+// Dependencies
 // *****************************************************************************
 const Botkit = require('botkit');
 const request = require('request');
 const caniuse = require('caniuse-api');
-
+const cheerio = require('cheerio');
 // *****************************************************************************
 // Helper methods
 // *****************************************************************************
 const randomNumber = require('./helpers/random-number.js');
 const Caniuse = require('./helpers/caniuse.js');
+const enviromentalColour = require('./helpers/enviromental-colour.js');
 
 // *****************************************************************************
 // Slack handshake
 // *****************************************************************************
 const controller = Botkit.slackbot({
   debug: false
-
 });
 // connect the bot to a stream of messages
 controller.spawn({
@@ -149,41 +149,43 @@ controller.hears('weather (.*)', 'ambient', ( bot, msg) => {
 
 
 // *****************************************************************************
-// Can I use
+// Governator
 // *****************************************************************************
+controller.hears('sitecode (.*)', 'ambient', ( bot, msg) => {
+  let options = { method: 'GET',
+    rejectUnauthorized: false,
+    url: 'https://governator.thirtythreebuild.co.uk/site.php',
+    qs: { sitecode: '' }
+  };
 
+  let sitecode = msg.match[1];
+  options.qs.sitecode = sitecode;
 
-// controller.hears('caniuse (.*)', 'ambient', ( bot, msg) => {
-//   let property = msg.match[1];
-//   console.log(property);
-//
-//   let caniuseResponse  = caniuse.getSupport('border');
-//   console.log('caniuseResponse', caniuseResponse);
-//   // browser = new Caniuse(caniuseResponse);
-//   // browser.supportedBrowsers();
-//   //
-//   // let messageString = `${browser.chrome()} ${browser.ie()} ${browser.edge()} ${browser.firefox()} ${browser.chromeAndroid()} ${browser.safari()} ${browser.opera()} ${browser.safariIos()}\n *More info* :arrow_forward:http://caniuse.com/#search=${property}`;
-//   //
-//   //   bot.reply(msg, messageString);
-//
-// });
+  request(options, (error, response, body) => {
 
+    if ( error ) throw new Error( error );
+    let $ = cheerio.load(body);
+    let enviroment = $('tbody').children().first().children('[class]').attr('class');
+    let link = $('tbody').children().first().children('[class]').children('a').attr('href');
+    let color = enviromentalColour(enviroment);
 
-
-
-
-
-
-
-// module.exports = (robot) => {
-//   return robot.hear(/caniuse (.*)/i, (msg) => {
-//
-//      let arguments = msg.match[1];
-//      let caniuseResponse  = caniuse.getSupport(arguments, true);
-//      browser = new Caniuse(caniuseResponse);
-//      browser.supportedBrowsers();
-//
-//      let message = `${browser.chrome()} ${browser.ie()} ${browser.edge()} ${browser.firefox()} ${browser.chromeAndroid()} ${browser.safari()} ${browser.opera()} ${browser.safariIos()}\n *More info* :arrow_forward:http://caniuse.com/#search=${arguments}`;
-//      return msg.send(message);
-//   });
-// };// end of robot
+    if (enviroment !== 'vagrant' && enviroment !== 'build' &&  enviroment !== 'staging' && enviroment !== 'production') {
+      let messageString = `*Wrong Sitecode* http://gph.is/1hulUUP`;
+      return bot.reply( msg, messageString );
+    } else {
+      let messageObject = {
+        text: `*${enviroment.toUpperCase()}*`,
+        as_user: true,
+        attachments: [
+          {
+            text: link,
+            response_type: "ephemeral",
+            color: color,
+            attachment_type: "default"
+          }
+        ]
+      }
+      return bot.reply( msg, messageObject );
+    }
+  });
+});
