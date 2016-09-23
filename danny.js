@@ -1,12 +1,23 @@
+// *****************************************************************************
+// Dependencies
+// *****************************************************************************
 const Botkit = require('botkit');
-const randomNumber = require('./helpers/random-number.js');
 const request = require('request');
+const caniuse = require('caniuse-api');
+const cheerio = require('cheerio');
+// *****************************************************************************
+// Helper methods
+// *****************************************************************************
+const randomNumber = require('./helpers/random-number.js');
+const Caniuse = require('./helpers/caniuse.js');
+const enviromentalColour = require('./helpers/enviromental-colour.js');
 
+// *****************************************************************************
+// Slack handshake
+// *****************************************************************************
 const controller = Botkit.slackbot({
   debug: false
-
 });
-
 // connect the bot to a stream of messages
 controller.spawn({
   token: 'xoxb-81725368998-YFmGmso3od5cN1oX7HtTNVo6',
@@ -133,5 +144,48 @@ controller.hears('weather (.*)', 'ambient', ( bot, msg) => {
     let condition = JSON.parse(body);
     let messageString = `*Condition:* ${condition.weather[0].description}\n*Temperature:* ${condition.main.temp}ºC\n*Wind:* ${condition.wind.speed}Km/h`;
     bot.reply(msg, messageString);
+  });
+});
+
+
+// *****************************************************************************
+// Governator
+// *****************************************************************************
+controller.hears('sitecode (.*)', 'ambient', ( bot, msg) => {
+  let options = { method: 'GET',
+    rejectUnauthorized: false,
+    url: 'https://governator.thirtythreebuild.co.uk/site.php',
+    qs: { sitecode: '' }
+  };
+
+  let sitecode = msg.match[1];
+  options.qs.sitecode = sitecode;
+
+  request(options, (error, response, body) => {
+
+    if ( error ) throw new Error( error );
+    let $ = cheerio.load(body);
+    let enviroment = $('tbody').children().first().children('[class]').attr('class');
+    let link = $('tbody').children().first().children('[class]').children('a').attr('href');
+    let color = enviromentalColour(enviroment);
+
+    if (enviroment !== 'vagrant' && enviroment !== 'build' &&  enviroment !== 'staging' && enviroment !== 'production') {
+      let messageString = `*Wrong Sitecode* http://gph.is/1hulUUP`;
+      return bot.reply( msg, messageString );
+    } else {
+      let messageObject = {
+        text: `*${enviroment.toUpperCase()}*`,
+        as_user: true,
+        attachments: [
+          {
+            text: link,
+            response_type: "ephemeral",
+            color: color,
+            attachment_type: "default"
+          }
+        ]
+      }
+      return bot.reply( msg, messageObject );
+    }
   });
 });
