@@ -16,7 +16,7 @@
     "botkit": "^0.2.2",
     "caniuse-api": "^1.5.2",
     "cheerio": "^0.22.0",
-    "moment": "^2.15.0",
+    "moment": "^2.15.1",
     "moment-precise-range-plugin": "^1.2.0"
   }
 }
