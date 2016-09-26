@@ -1,3 +1,29 @@
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+           ______     ______     ______   __  __     __     ______
+          /\  == \   /\  __ \   /\__  _\ /\ \/ /    /\ \   /\__  _\
+          \ \  __<   \ \ \/\ \  \/_/\ \/ \ \  _"-.  \ \ \  \/_/\ \/
+           \ \_____\  \ \_____\    \ \_\  \ \_\ \_\  \ \_\    \ \_\
+            \/_____/   \/_____/     \/_/   \/_/\/_/   \/_/     \/_/
+
+
+This is a sample Slack Button application that adds a bot to one or many slack teams.
+
+# RUN THE APP:
+  Create a Slack app. Make sure to configure the bot user!
+    -> https://api.slack.com/applications/new
+    -> Add the Redirect URI: http://localhost:3000/oauth
+  Run your bot from the command line:
+    clientId=<my client id> clientSecret=<my client secret> port=3000 node slackbutton_bot.js
+# USE THE APP
+  Add the app to your Slack by visiting the login page:
+    -> http://localhost:3000/login
+  After you've added the app, try talking to your bot!
+# EXTEND THE APP:
+  Botkit has many features for building cool and useful bots!
+  Read all about it here:
+    -> http://howdy.ai/botkit
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 // *****************************************************************************
 // Dependencies
 // *****************************************************************************
@@ -19,18 +45,70 @@ const enviromentalColour = require('./helpers/enviromental-colour.js');
 // *****************************************************************************
 // Slack handshake
 // *****************************************************************************
-const controller = Botkit.slackbot({
-  debug: false,
+
+
+var controller = Botkit.slackbot({
   json_file_store: './storage',
   interactive_replies: true
+}).configureSlackApp(
+  {
+    clientId: '2211698229.83922055012',
+    clientSecret: '71b860052311c48d86495d5a385549f8',
+    scopes: ['bot'],
+  }
+);
+
+controller.setupWebserver(process.env.port,function(err,webserver) {
+  controller.createWebhookEndpoints(controller.webserver);
+
+  controller.createOauthEndpoints(controller.webserver,function(err,req,res) {
+    if (err) {
+      res.status(500).send('ERROR: ' + err);
+    } else {
+      res.send('Success!');
+    }
+  });
 });
-// connect the bot to a stream of messages
-controller.spawn({
-  token: 'xoxb-81725368998-YFmGmso3od5cN1oX7HtTNVo6',
-}).startRTM()
 
 
-// asapStorage('/');
+// just a simple way to make sure we don't
+// connect to the RTM twice for the same team
+var _bots = {};
+function trackBot(bot) {
+  _bots[bot.config.token] = bot;
+}
+
+// Handle events related to the websocket connection to Slack
+controller.on('rtm_open',function(bot) {
+  console.log('** The RTM api just connected!');
+});
+
+controller.on('rtm_close',function(bot) {
+  console.log('** The RTM api just closed');
+  // you may want to attempt to re-open
+});
+
+controller.storage.teams.all(function(err,teams) {
+
+  if (err) {
+    throw new Error(err);
+  }
+
+  // connect all teams with bots up to slack!
+  for (var t  in teams) {
+    if (teams[t].bot) {
+      controller.spawn(teams[t]).startRTM(function(err, bot) {
+        if (err) {
+          console.log('Error connecting bot to Slack:',err);
+        } else {
+          trackBot(bot);
+        }
+      });
+    }
+  }
+
+});
+
 // *****************************************************************************
 // Arnie quotes
 // *****************************************************************************
@@ -61,6 +139,79 @@ controller.hears('arnie quote', 'ambient', (bot, msg)=> {
 });
 
 // *****************************************************************************
+// ASAP
+// *****************************************************************************
+
+let asapOnBrain = null;
+
+controller.hears('asap', 'ambient', ( bot, msg ) => {
+  if (!asapOnBrain) {
+    asapOnBrain = moment();
+  }
+
+  let lengthOfTime = moment().preciseDiff(asapOnBrain);
+  let now = moment();
+  let diffDays = now.diff(asapOnBrain, 'days');
+  let diffHours = now.diff(asapOnBrain, 'hours');
+
+  asapOnBrain = asapOnBrain = moment();
+  let messageString =`It’s been ${lengthOfTime} since *ASAP* was last mentioned`;
+  // bot.startPrivateConversation(msg, messageString)
+
+  let messageUserId = msg.user;
+
+  bot.startPrivateConversation({ user:messageUserId }, function(err,convo) {
+    // controller.interactive_replies = true;
+    convo.say(messageString);
+    convo.ask({
+        attachments:[
+            {
+                title: 'Do you want to proceed?',
+                callback_id: 'http://127.0.0.1:3000/slack/receive',
+                attachment_type: 'default',
+                fallback: 'Do you want to proceed?',
+                actions: [
+                    {
+                        "name":"yes",
+                        "text": "yes",
+                        "value": "yes",
+                        "type": "button",
+                    },
+                    {
+                        "name":"no",
+                        "text": "no",
+                        "value": "no",
+                        "type": "button",
+                    }
+                ]
+            }
+        ]
+    },[
+        {
+            pattern: "yes",
+            callback: function(reply, convo) {
+                convo.say('FABULOUS!');
+                convo.next();
+            }
+        },
+        {
+            pattern: "no",
+            callback: function(reply, convo) {
+                convo.say('Too bad');
+                convo.next();
+            }
+        },
+        {
+            default: true,
+            callback: function(reply, convo) {
+            }
+        }
+    ]
+
+  );
+ }) //end of private conversation
+});
+// *****************************************************************************
 // Tea makers
 // *****************************************************************************
 
@@ -73,7 +224,6 @@ controller.hears('tea', 'ambient', (bot, msg)=> {
       bot.reply(msg, messageString);
     })
 });
-
 // *****************************************************************************
 // Yoda quotes
 // *****************************************************************************
@@ -196,111 +346,4 @@ controller.hears('sitecode (.*)', ['ambient', 'direct_message	', 'direct_mention
       return bot.reply( msg, messageObject );
     }
   });
-});
-
-// *****************************************************************************
-// ASAP
-// *****************************************************************************
-
-// const createAsapStorage = function() {
-//   const objectsToList = function(cb) {
-//     return function(err, data) {
-//       if (err) {
-//         cb(err, data);
-//       } else {
-//         cb(err, Object.keys(data).map(function(key) {
-//           return data[key];
-//         }));
-//       }
-//     };
-//   };
-//
-//   let asap_db = new Store('./storage/asap', {saveId: 'id'});
-//
-//   controller.storage.asap = {
-//     get: function(asap_id, cb) {
-//       asap_db.get(asap_id, cb);
-//     },
-//     save: function(asap_data, cb) {
-//       asap_db.save(asap_data.id, asap_data, cb);
-//     },
-//     all: function(cb) {
-//       asap_db.all(objectsToList(cb));
-//     }
-//   }
-// }
-
-let asapOnBrain = null;
-
-controller.hears('asap', 'ambient', ( bot, msg ) => {
-  if (!asapOnBrain) {
-    asapOnBrain = moment();
-  }
-
-  let lengthOfTime = moment().preciseDiff(asapOnBrain);
-  let now = moment();
-  let diffDays = now.diff(asapOnBrain, 'days');
-  let diffHours = now.diff(asapOnBrain, 'hours');
-
-  asapOnBrain = asapOnBrain = moment();
-  let messageString =`It’s been ${lengthOfTime} since *ASAP* was last mentioned`;
-  // bot.startPrivateConversation(msg, messageString)
-
-  let messageUserId = msg.user;
-
-  bot.startPrivateConversation({ user:messageUserId }, function(err,convo) {
-    // controller.interactive_replies = true;
-    convo.say(messageString);
-  //   convo.ask({
-  //       attachments:[
-  //           {
-  //               title: 'Do you want to proceed?',
-  //               callback_id: '123',
-  //               attachment_type: 'default',
-  //               fallback: 'fallback',
-  //               actions: [
-  //                   {
-  //                       "name":"yes",
-  //                       "text": "yes",
-  //                       "value": "yes",
-  //                       "type": "button",
-  //                   },
-  //                   {
-  //                       "name":"no",
-  //                       "text": "no",
-  //                       "value": "no",
-  //                       "type": "button",
-  //                   }
-  //               ]
-  //           }
-  //       ]
-  //   },[
-  //       {
-  //           pattern: "yes",
-  //           callback: function(reply, convo) {
-  //               convo.say('FABULOUS!');
-  //               convo.next();
-  //               // do something awesome here.
-  //           }
-  //       },
-  //       {
-  //           pattern: "no",
-  //           callback: function(reply, convo) {
-  //               convo.say('Too bad');
-  //               convo.next();
-  //           }
-  //       },
-  //       {
-  //           default: true,
-  //           callback: function(reply, convo) {
-  //               // do nothing
-  //           }
-  //       }
-  //   ]
-  //
-  // );
-
-  }) //end of private conversation
-
-  // bot.reply(msg, messageString);
 });
