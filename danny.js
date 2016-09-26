@@ -29,6 +29,7 @@ controller.spawn({
   token: 'xoxb-81725368998-YFmGmso3od5cN1oX7HtTNVo6',
 }).startRTM()
 
+
 // asapStorage('/');
 // *****************************************************************************
 // Arnie quotes
@@ -229,7 +230,6 @@ controller.hears('sitecode (.*)', ['ambient', 'direct_message	', 'direct_mention
 //   }
 // }
 
-
 let asapOnBrain = null;
 
 controller.hears('asap', 'ambient', ( bot, msg ) => {
@@ -251,110 +251,56 @@ controller.hears('asap', 'ambient', ( bot, msg ) => {
   bot.startPrivateConversation({ user:messageUserId }, function(err,convo) {
     // controller.interactive_replies = true;
     convo.say(messageString);
-    convo.ask({
-        attachments:[
-            {
-                title: 'Do you want to proceed?',
-                callback_id: '123',
-                attachment_type: 'default',
-                fallback: 'fallback',
-                actions: [
-                    {
-                        "name":"yes",
-                        "text": "yes",
-                        "value": "yes",
-                        "type": "button",
-                    },
-                    {
-                        "name":"no",
-                        "text": "no",
-                        "value": "no",
-                        "type": "button",
-                    }
-                ]
-            }
-        ]
-    },[
-        {
-            pattern: "yes",
-            callback: function(reply, convo) {
-                convo.say('FABULOUS!');
-                convo.next();
-                // do something awesome here.
-            }
-        },
-        {
-            pattern: "no",
-            callback: function(reply, convo) {
-                convo.say('Too bad');
-                convo.next();
-            }
-        },
-        {
-            default: true,
-            callback: function(reply, convo) {
-                // do nothing
-            }
-        }
-    ]
-
-  );
+  //   convo.ask({
+  //       attachments:[
+  //           {
+  //               title: 'Do you want to proceed?',
+  //               callback_id: '123',
+  //               attachment_type: 'default',
+  //               fallback: 'fallback',
+  //               actions: [
+  //                   {
+  //                       "name":"yes",
+  //                       "text": "yes",
+  //                       "value": "yes",
+  //                       "type": "button",
+  //                   },
+  //                   {
+  //                       "name":"no",
+  //                       "text": "no",
+  //                       "value": "no",
+  //                       "type": "button",
+  //                   }
+  //               ]
+  //           }
+  //       ]
+  //   },[
+  //       {
+  //           pattern: "yes",
+  //           callback: function(reply, convo) {
+  //               convo.say('FABULOUS!');
+  //               convo.next();
+  //               // do something awesome here.
+  //           }
+  //       },
+  //       {
+  //           pattern: "no",
+  //           callback: function(reply, convo) {
+  //               convo.say('Too bad');
+  //               convo.next();
+  //           }
+  //       },
+  //       {
+  //           default: true,
+  //           callback: function(reply, convo) {
+  //               // do nothing
+  //           }
+  //       }
+  //   ]
+  //
+  // );
 
   }) //end of private conversation
 
   // bot.reply(msg, messageString);
-})
-
-
-
-
-
-
-// bot.startConversation(message, function(err, convo) {
-//
-//     convo.ask({
-//         attachments:[
-//             {
-//                 title: 'Do you want to proceed?',
-//                 callback_id: '123',
-//                 attachment_type: 'default',
-//                 actions: [
-//                     {
-//                         "name":"yes",
-//                         "text": "Yes",
-//                         "value": "yes",
-//                         "type": "button",
-//                     },
-//                     {
-//                         "name":"no",
-//                         "text": "No",
-//                         "value": "no",
-//                         "type": "button",
-//                     }
-//                 ]
-//             }
-//         ]
-//     },[
-//         {
-//             pattern: "yes",
-//             callback: function(reply, convo) {
-//                 convo.say('FABULOUS!');
-//                 convo.next();
-//                 // do something awesome here.
-//             }
-//         },
-//         {
-//             pattern: "no",
-//             callback: function(reply, convo) {
-//                 convo.say('Too bad');
-//                 convo.next();
-//             }
-//         },
-//         {
-//             default: true,
-//             callback: function(reply, convo) {
-//                 // do nothing
-//             }
-//         }
-//     ]);
-// });
+});
