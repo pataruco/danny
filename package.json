@@ -1,10 +1,14 @@
 {
   "name": "danny",
   "version": "1.0.0",
+  "engines": {
+    "node": "6.6.0"
+  },
   "description": "",
   "main": "danny.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "clientId=2211698229.83922055012 clientSecret=71b860052311c48d86495d5a385549f8 port=3000 node app.js",
+    "tunnel": "lt --port 3000"
   },
   "repository": {
     "type": "git",
@@ -16,6 +20,7 @@
     "botkit": "^0.2.2",
     "caniuse-api": "^1.5.2",
     "cheerio": "^0.22.0",
+    "localtunnel": "^1.8.1",
     "moment": "^2.15.1",
     "moment-precise-range-plugin": "^1.2.0"
   }
